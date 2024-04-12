@@ -1,0 +1,196 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
+public class ToDoList extends JFrame {
+
+    private DefaultListModel<Task> toDoListModel;
+    private JList<Task> toDoList;
+    private JTextField newItemField;
+    private JButton removeButton;
+    private JButton editButton;
+    private JComboBox<Task.Priority> priorityComboBox;
+
+    public ToDoList() {
+        initUI();
+    }
+
+    private void initUI() {
+        setTitle("To-Do List");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(400, 400);
+        setLayout(new BorderLayout());
+
+        // Set background color
+        getContentPane().setBackground(new Color(230, 230, 230)); // Light gray background
+
+        // Panel for holding the list
+        JPanel listPanel = new JPanel();
+        listPanel.setLayout(new BorderLayout());
+
+        // Initialize the list model and list
+        toDoListModel = new DefaultListModel<>();
+        toDoList = new JList<>(toDoListModel);
+        toDoList.setCellRenderer(new TaskCellRenderer());
+        JScrollPane scrollPane = new JScrollPane(toDoList);
+        listPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Panel for holding the text field, priority combo box, and buttons
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BorderLayout());
+
+        // Text field for adding new items
+        newItemField = new JTextField();
+        inputPanel.add(newItemField, BorderLayout.CENTER);
+
+        // Priority combo box
+        priorityComboBox = new JComboBox<>(Task.Priority.values());
+        inputPanel.add(priorityComboBox, BorderLayout.WEST);
+
+        // Button for adding new items
+        JButton addButton = new JButton("Add");
+        addButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                addItemToList();
+            }
+        });
+        inputPanel.add(addButton, BorderLayout.EAST);
+
+        // Button for removing selected item
+        removeButton = new JButton("Remove");
+        removeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                removeSelectedItem();
+            }
+        });
+        inputPanel.add(removeButton, BorderLayout.SOUTH);
+
+        // Button for editing selected item
+        editButton = new JButton("Edit");
+        editButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                editSelectedItem();
+            }
+        });
+        inputPanel.add(editButton, BorderLayout.NORTH);
+
+        // Add panels to the main frame
+        add(listPanel, BorderLayout.CENTER);
+        add(inputPanel, BorderLayout.SOUTH);
+
+        // Add mouse listener to handle selection
+        toDoList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    editSelectedItem();
+                }
+            }
+        });
+
+        setVisible(true);
+    }
+
+    private void addItemToList() {
+        String newItem = newItemField.getText();
+        Task.Priority priority = (Task.Priority) priorityComboBox.getSelectedItem();
+        if (!newItem.isEmpty()) {
+            toDoListModel.addElement(new Task(newItem, priority));
+            newItemField.setText("");
+        }
+    }
+
+    private void removeSelectedItem() {
+        int selectedIndex = toDoList.getSelectedIndex();
+        if (selectedIndex != -1) {
+            toDoListModel.remove(selectedIndex);
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select an item to remove.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void editSelectedItem() {
+        int selectedIndex = toDoList.getSelectedIndex();
+        if (selectedIndex != -1) {
+            Task selectedTask = toDoListModel.getElementAt(selectedIndex);
+            String editedItem = JOptionPane.showInputDialog(this, "Edit item:", selectedTask.getName());
+            if (editedItem != null && !editedItem.isEmpty()) {
+                selectedTask.setName(editedItem);
+                selectedTask.setPriority((Task.Priority) priorityComboBox.getSelectedItem());
+                toDoList.repaint(); // Refresh the list to reflect changes
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select an item to edit.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                new ToDoList();
+            }
+        });
+    }
+
+    private class Task {
+        private String name;
+        private Priority priority;
+
+        public Task(String name, Priority priority) {
+            this.name = name;
+            this.priority = priority;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public Priority getPriority() {
+            return priority;
+        }
+
+        public void setPriority(Priority priority) {
+            this.priority = priority;
+        }
+
+        @Override
+        public String toString() {
+            return name + " (" + priority + ")";
+        }
+
+        public enum Priority {
+            HIGH(Color.BLACK), MEDIUM(new Color(128, 0, 128)), LOW(new Color(135, 206, 250));
+
+            private Color color;
+
+            Priority(Color color) {
+                this.color = color;
+            }
+
+            public Color getColor() {
+                return color;
+            }
+        }
+    }
+
+    private class TaskCellRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            Task task = (Task) value;
+            label.setForeground(task.getPriority().getColor());
+            return label;
+        }
+    }
+}
